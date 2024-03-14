@@ -6,6 +6,7 @@ import { AuthService } from "./auth.service";
 import { JwtStrategy } from './jwt.strategy';
 import { LocalStrategy } from "./local.strategy";
 import { User } from "./user.entity";
+import { UsersController } from "./users.controller";
 
 @Module({
     //So now we can inject the user repository
@@ -19,6 +20,6 @@ JwtModule.registerAsync({
     })
 })],
     providers:[LocalStrategy,AuthService,JwtStrategy],
-    controllers:[AuthController]
+    controllers:[AuthController,UsersController]
 })
 export class AuthModule{}
