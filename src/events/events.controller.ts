@@ -1,5 +1,5 @@
 import {Event} from './event.entity'
-import {Controller,Get,Post,Patch,Delete, Param,Body,HttpCode, ParseIntPipe, ValidationPipe,Query, Logger, NotFoundException, UsePipes} from "@nestjs/common"
+import {Controller,Get,Post,Patch,Delete, Param,Body,HttpCode, ParseIntPipe, ValidationPipe,Query, Logger, NotFoundException, UsePipes, UseGuards} from "@nestjs/common"
 import { CreateEventDto } from "./input/create-event.dto";
 import { UpdateEventDto } from "./input/update-event.dto";
 import { MoreThan, Repository } from 'typeorm';
@@ -7,6 +7,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Attendee } from './attendee.entity';
 import { EventsService } from './events.service';
 import { ListEvents } from './input/list.events';
+import { CurrentUser } from 'src/auth/current-user.decorator';
+import { User } from 'src/auth/user.entity';
+import { AuthGuardJwt } from 'src/auth/auth-guard.jwt';
 @Controller('/events')
 export class EventsController{
     private readonly logger = new Logger(EventsController.name)
@@ -82,14 +85,10 @@ export class EventsController{
     // }
 
     @Post()
-    async create(@Body() input:CreateEventDto){    
-        return await this.repository.save( {
-            ...input,
-            // when:Date -> Wrong
-            when:new Date(input.when),
-            //ID now is auto generated
-            // id:this.events.length + 1
-        });
+    @UseGuards(AuthGuardJwt)
+    async create(@Body() input:CreateEventDto, @CurrentUser() user:User){ 
+        // console.log(user)
+        return await this.eventsService.createEvent(input,user)
     }
     @Patch(':id')
     async update(@Param('id') id,@Body() input:UpdateEventDto){

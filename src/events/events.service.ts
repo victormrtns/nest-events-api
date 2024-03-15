@@ -4,6 +4,9 @@ import { DeleteResult, Repository } from "typeorm";
 import { Attendee, AttendeeAnswerEnum } from './attendee.entity';
 import { ListEvents, WhenEventFilter } from './input/list.events';
 import { PaginateOptions,paginate } from 'src/pagination/paginator';
+import { CreateEventDto } from './input/create-event.dto';
+import { User } from 'src/auth/user.entity';
+import {Event} from './event.entity'
 
 @Injectable()
 export class EventsService{
@@ -16,6 +19,18 @@ export class EventsService{
         return this.eventsRepository
         .createQueryBuilder('e')
         .orderBy('e.id','ASC')
+    }
+    public async createEvent(input:CreateEventDto,user:User):Promise<Event>
+    {
+        //No overload error is a bug that u should pass all the parameters
+        return await this.eventsRepository.save( {
+            ...input,
+            organizer:user,
+            // when:Date -> Wrong
+            when:new Date(input.when),
+            //ID now is auto generated
+            // id:this.events.length + 1
+        });
     }
 
     public getEventsWithAttendeeCountQuery(){

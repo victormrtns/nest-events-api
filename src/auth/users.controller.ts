@@ -15,18 +15,20 @@ export class UsersController{
     @Post()
     async create(@Body() createUserDto:CreateUserDto){
         const user = new User();
-        if(createUserDto.password != createUserDto.retypedPassword){
+        if(createUserDto.password !== createUserDto.retypedPassword){
             throw new BadRequestException(['The passwords dont match']);
         }
-        const existingUser = this.userRepository.findOne({
-            where:{username:createUserDto.username,
-            email:createUserDto.email}
+        const existingUser = await this.userRepository.findOne({
+            where:[
+            {username:createUserDto.username},
+            {email:createUserDto.email}
+            ]
         })
         if(existingUser){
             throw new BadRequestException(['User is already registered']);
         }
         user.username = createUserDto.username
-        user.password = createUserDto.password
+        user.password = await this.authService.hashPassword(createUserDto.password)
         user.email = createUserDto.email
         user.firstName = createUserDto.firstName
         user.lastName = createUserDto.lastName
