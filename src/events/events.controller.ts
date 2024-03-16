@@ -1,5 +1,5 @@
 import {Event} from './event.entity'
-import {Controller,Get,Post,Patch,Delete, Param,Body,HttpCode, ParseIntPipe, ValidationPipe,Query, Logger, NotFoundException, UsePipes, UseGuards} from "@nestjs/common"
+import {Controller,Get,Post,Patch,Delete, Param,Body,HttpCode, ParseIntPipe, ValidationPipe,Query, Logger, NotFoundException, UsePipes, UseGuards, ForbiddenException} from "@nestjs/common"
 import { CreateEventDto } from "./input/create-event.dto";
 import { UpdateEventDto } from "./input/update-event.dto";
 import { MoreThan, Repository } from 'typeorm';
@@ -91,11 +91,19 @@ export class EventsController{
         return await this.eventsService.createEvent(input,user)
     }
     @Patch(':id')
-    async update(@Param('id') id,@Body() input:UpdateEventDto){
+    @UseGuards(AuthGuardJwt)
+    async update(@Param('id') id,@Body() input:UpdateEventDto,@CurrentUser() user:User){
         const event = await this.repository.findOne({ where: { id:id } })
         if(!event){
             throw new NotFoundException();
         }
+        
+        if(event.organizerId !== user.id){
+            throw new ForbiddenException(
+                null,`You are not authorized to change this event.`
+            );
+        }
+
         await this.repository.save({
             ...event,
             ...input,
@@ -104,12 +112,13 @@ export class EventsController{
         });
     }
     @Delete(':id')
+    @UseGuards(AuthGuardJwt)
     @HttpCode(204)
-    async remove(@Param('id') id){
+    async remove(@Param('id') id, @CurrentUser() user:User){
         //Wrong because u are removing the id, not the event
         // await this.repository.remove(id)
         // const event = await this.repository.findOne({ where: { id:id } })
-        const result = await this.eventsService.deleteEvent(id);
+        const result = await this.eventsService.deleteEvent(id,user);
         if(result?.affected !==1){
             throw new NotFoundException();
         }

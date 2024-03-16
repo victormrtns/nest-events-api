@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, Logger, NotAcceptableException } from '@nestjs/common';
 import { InjectRepository } from "@nestjs/typeorm";
 import { DeleteResult, Repository } from "typeorm";
 import { Attendee, AttendeeAnswerEnum } from './attendee.entity';
@@ -67,11 +67,16 @@ export class EventsService{
         )
     }
 
-    public async deleteEvent(id:number):Promise<DeleteResult>{
-        return await this.eventsRepository.createQueryBuilder('e')
+    public async deleteEvent(id:number,user:User):Promise<DeleteResult>{
+        const result = await this.eventsRepository.createQueryBuilder('e')
         .delete()
         .where('id =:id',{id})
+        .where('organizerId =:user_id',{user_id:user.id})
         .execute();
+        if(!result){
+            throw new BadRequestException();
+        }
+        return result;
     }
 
     private async getEventsWithAttendeeCountFiltered(filter?:ListEvents){
