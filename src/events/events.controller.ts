@@ -1,5 +1,5 @@
 import {Event} from './event.entity'
-import {Controller,Get,Post,Patch,Delete, Param,Body,HttpCode, ParseIntPipe, ValidationPipe,Query, Logger, NotFoundException, UsePipes, UseGuards, ForbiddenException} from "@nestjs/common"
+import {Controller,Get,Post,Patch,Delete, Param,Body,HttpCode, ParseIntPipe, ValidationPipe,Query, Logger, NotFoundException, UsePipes, UseGuards, ForbiddenException, SerializeOptions, UseInterceptors, ClassSerializerInterceptor} from "@nestjs/common"
 import { CreateEventDto } from "./input/create-event.dto";
 import { UpdateEventDto } from "./input/update-event.dto";
 import { MoreThan, Repository } from 'typeorm';
@@ -11,6 +11,7 @@ import { CurrentUser } from 'src/auth/current-user.decorator';
 import { User } from 'src/auth/user.entity';
 import { AuthGuardJwt } from 'src/auth/auth-guard.jwt';
 @Controller('/events')
+@SerializeOptions({strategy:'excludeAll'})
 export class EventsController{
     private readonly logger = new Logger(EventsController.name)
     constructor(
@@ -22,6 +23,7 @@ export class EventsController{
     ){}
     @Get()
     @UsePipes(new ValidationPipe({transform:true}))
+    @UseInterceptors(ClassSerializerInterceptor)
     async findAll(@Query() filter:ListEvents){
         const events = await this.eventsService
         .getEventsWithAttendeeCountFilteredPaginated(
@@ -34,6 +36,7 @@ export class EventsController{
         );
         return events;
     }
+    /*
     @Get('/practice')
     async practice(){
         return await this.repository.find({
@@ -61,8 +64,10 @@ export class EventsController{
         .take(3)
         .getMany()
     }
+    */
 
     @Get(':id')
+    @UseInterceptors(ClassSerializerInterceptor)
     async findOne(@Param('id', ParseIntPipe) id:number){
         // console.log(typeof id)
         // const event = await this.repository.findOne({where:{id:id}});
@@ -86,12 +91,14 @@ export class EventsController{
 
     @Post()
     @UseGuards(AuthGuardJwt)
+    @UseInterceptors(ClassSerializerInterceptor)
     async create(@Body() input:CreateEventDto, @CurrentUser() user:User){ 
         // console.log(user)
         return await this.eventsService.createEvent(input,user)
     }
     @Patch(':id')
     @UseGuards(AuthGuardJwt)
+    @UseInterceptors(ClassSerializerInterceptor)
     async update(@Param('id') id,@Body() input:UpdateEventDto,@CurrentUser() user:User){
         const event = await this.repository.findOne({ where: { id:id } })
         if(!event){
